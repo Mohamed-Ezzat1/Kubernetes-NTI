@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: main-app
+  namespace: lab-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: main-app
+  template:
+    metadata:
+      labels:
+        app: main-app
+    spec:
+      initContainers:
+      - name: init-myservice
+        image: busybox
+        volumeMounts:
+        - name: config-volume
+          mountPath: /my-code
+        - name: workdir
+          mountPath: /work-dir
+        command: ['sh', '-c', 'cp /my-code/* /work-dir; ls -la /work-dir']
+      containers:
+      - name: webapp
+        image: python:3.11-slim
+        command: ["sh", "-c"]
+        args:
+        - pip install --no-cache-dir flask && python /work-dir/app.py
+        volumeMounts:
+        - name: workdir
+          mountPath: /work-dir
+        - name: logs
+          mountPath: /var/log/netlab
+        ports:
+        - containerPort: 8080
+        env:
+        - name: APP_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: in-secret
+              key: APP_USERNAME
+        - name: APP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: in-secret
+              key: APP_PASSWORD
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+      volumes:
+      - name: config-volume
+        configMap:
+          name: netlab-code
+      - name: workdir
+        emptyDir: {}
+      - name: logs
+        persistentVolumeClaim:
+          claimName: pv-claim

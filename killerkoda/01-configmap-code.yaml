@@ -1,0 +1,310 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netlab-code
+  namespace: lab-app
+data:
+  app.py: |
+    import os
+    import socket
+    import time
+    import subprocess
+    from datetime import datetime, timezone
+    from flask import Flask, request, jsonify, render_template_string
+
+    app = Flask(__name__)
+
+    LOG_DIR = "/var/log/netlab"
+    LOG_FILE = os.path.join(LOG_DIR, "connection-tests.log")
+
+    APP_USERNAME = os.environ.get("APP_USERNAME", "")
+    APP_PASSWORD = os.environ.get("APP_PASSWORD", "")
+
+    TARGETS = [
+        {"label": "same-ns-service", "host": os.environ.get("TARGET_SAME_NS", "target-same-ns"), "port": 80},
+        {"label": "cross-ns-service", "host": os.environ.get("TARGET_CROSS_NS", "target-cross-ns.lab-other"), "port": 80},
+    ]
+
+    os.makedirs(LOG_DIR, exist_ok=True)
+
+
+    def log_line(text):
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        line = f"[{ts}] {text}\n"
+        try:
+            with open(LOG_FILE, "a") as f:
+                f.write(line)
+        except Exception:
+            pass
+        return line
+
+
+    def test_tcp(host, port, timeout=3):
+        start = time.time()
+        try:
+            with socket.create_connection((host, port), timeout=timeout):
+                elapsed = round((time.time() - start) * 1000, 1)
+                return True, f"connected in {elapsed}ms"
+        except Exception as e:
+            elapsed = round((time.time() - start) * 1000, 1)
+            return False, f"failed after {elapsed}ms: {e}"
+
+
+    @app.route("/")
+    def index():
+        return render_template_string(PAGE)
+
+
+    @app.route("/api/connectivity")
+    def api_connectivity():
+        results = []
+        for t in TARGETS:
+            ok, detail = test_tcp(t["host"], t["port"])
+            status = "ALLOWED" if ok else "BLOCKED"
+            log_line(f"connectivity-check target={t['label']} host={t['host']}:{t['port']} result={status} detail={detail}")
+            results.append({
+                "label": t["label"],
+                "host": t["host"],
+                "port": t["port"],
+                "ok": ok,
+                "status": status,
+                "detail": detail,
+            })
+        return jsonify(results)
+
+
+    @app.route("/api/login", methods=["POST"])
+    def api_login():
+        data = request.get_json(silent=True) or {}
+        username = data.get("username", "")
+        password = data.get("password", "")
+
+        if username == APP_USERNAME and password == APP_PASSWORD and APP_USERNAME:
+            log_line(f"login-attempt username={username} result=SUCCESS")
+            return jsonify({"ok": True, "message": "Login successful — Secret values matched."})
+        else:
+            log_line(f"login-attempt username={username} result=FAILURE")
+            return jsonify({"ok": False, "message": "Invalid credentials — does not match the Secret."}), 401
+
+
+    @app.route("/api/logs")
+    def api_logs():
+        try:
+            with open(LOG_FILE, "r") as f:
+                lines = f.readlines()
+            tail = lines[-50:]
+            return jsonify({"ok": True, "lines": tail, "path": LOG_FILE})
+        except FileNotFoundError:
+            return jsonify({"ok": True, "lines": [], "path": LOG_FILE})
+
+
+    @app.route("/api/whoami")
+    def api_whoami():
+        pod_name = os.environ.get("POD_NAME", "unknown")
+        pod_ns = os.environ.get("POD_NAMESPACE", "unknown")
+        pod_ip = os.environ.get("POD_IP", "unknown")
+        return jsonify({"pod_name": pod_name, "namespace": pod_ns, "pod_ip": pod_ip})
+
+
+    def build_topology_svg():
+        """Draws the pod topology as an SVG, colored live from actual connectivity
+        test results. This is the app drawing its own architecture, not a static
+        picture — every time this route is hit, it re-runs the connectivity
+        checks and bakes the current ALLOWED/BLOCKED state into the line colors.
+        """
+        pod_name = os.environ.get("POD_NAME", "netlab-app")
+        pod_ns = os.environ.get("POD_NAMESPACE", "lab-app")
+
+        results = []
+        for t in TARGETS:
+            ok, detail = test_tcp(t["host"], t["port"])
+            results.append({**t, "ok": ok, "detail": detail})
+
+        def edge(y, target, ok):
+            color = "#4ade80" if ok else "#f87171"
+            dash = "" if ok else 'stroke-dasharray="6 5"'
+            label = "ALLOWED" if ok else "BLOCKED"
+            return f'''
+            <line x1="260" y1="90" x2="420" y2="{y}" stroke="{color}" stroke-width="2" {dash} marker-end="url(#arrow-{('ok' if ok else 'blocked')})"/>
+            <text x="340" y="{y - 10}" font-size="11" fill="{color}" text-anchor="middle">{label}</text>
+            '''
+
+        same_ns = results[0]
+        cross_ns = results[1]
+
+        svg = f'''<svg viewBox="0 0 680 320" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+      <defs>
+        <marker id="arrow-ok" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0 0L10 5L0 10Z" fill="#4ade80"/>
+        </marker>
+        <marker id="arrow-blocked" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0 0L10 5L0 10Z" fill="#f87171"/>
+        </marker>
+      </defs>
+
+      <rect x="20" y="20" width="330" height="140" rx="14" fill="none" stroke="#3b82f6" stroke-width="1"/>
+      <text x="35" y="42" font-size="13" fill="#3b82f6">namespace: {pod_ns}</text>
+
+      <rect x="40" y="60" width="220" height="60" rx="8" fill="#171a23" stroke="#7f77dd" stroke-width="1"/>
+      <text x="150" y="84" font-size="13" fill="#e6e6e6" text-anchor="middle">{pod_name}</text>
+      <text x="150" y="102" font-size="10" fill="#9aa0ae" text-anchor="middle">this pod</text>
+
+      <rect x="420" y="60" width="200" height="60" rx="8" fill="#171a23" stroke="{"#4ade80" if same_ns["ok"] else "#f87171"}" stroke-width="1"/>
+      <text x="520" y="84" font-size="13" fill="#e6e6e6" text-anchor="middle">{same_ns["label"]}</text>
+      <text x="520" y="102" font-size="10" fill="#9aa0ae" text-anchor="middle">same namespace</text>
+
+      {edge(90, same_ns, same_ns["ok"])}
+
+      <rect x="420" y="220" width="200" height="60" rx="8" fill="#171a23" stroke="{"#4ade80" if cross_ns["ok"] else "#f87171"}" stroke-width="1"/>
+      <text x="520" y="244" font-size="13" fill="#e6e6e6" text-anchor="middle">{cross_ns["label"]}</text>
+      <text x="520" y="262" font-size="10" fill="#9aa0ae" text-anchor="middle">namespace: lab-other</text>
+
+      {edge(250, cross_ns, cross_ns["ok"])}
+    </svg>'''
+        return svg, results
+
+
+    @app.route("/api/topology.svg")
+    def api_topology_svg():
+        svg, _ = build_topology_svg()
+        return app.response_class(svg, mimetype="image/svg+xml")
+
+
+    @app.route("/topology")
+    def topology_page():
+        return render_template_string(TOPOLOGY_PAGE)
+
+
+    PAGE = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <title>K8s Network Lab</title>
+    <style>
+      body { font-family: -apple-system, sans-serif; background: #0f1117; color: #e6e6e6; margin: 0; padding: 24px; }
+      h1 { font-size: 20px; color: #fff; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+      .card { background: #171a23; border: 1px solid #2a2e3a; border-radius: 10px; padding: 18px; }
+      .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .05em; color: #9aa0ae; margin-top: 0; }
+      .target { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #23273322; }
+      .badge { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+      .badge.allowed { background: #123d24; color: #4ade80; }
+      .badge.blocked { background: #3d1414; color: #f87171; }
+      .detail { font-size: 11px; color: #6b7280; margin-top: 2px; }
+      input { width: 100%; padding: 8px; margin: 6px 0; background: #0f1117; border: 1px solid #2a2e3a; color: #e6e6e6; border-radius: 6px; box-sizing: border-box; }
+      button { background: #3b82f6; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; margin-top: 6px; }
+      button:hover { background: #2563eb; }
+      #loginResult { margin-top: 10px; font-size: 13px; }
+      pre { background: #0a0b0f; padding: 10px; border-radius: 6px; font-size: 11px; max-height: 220px; overflow-y: auto; color: #9aa0ae; }
+      .whoami { font-size: 12px; color: #6b7280; margin-bottom: 10px; }
+    </style>
+    </head>
+    <body>
+      <h1>Kubernetes Network Policy Lab</h1>
+      <div class="whoami" id="whoami">loading pod identity...</div>
+      <div style="margin-bottom:16px;"><a href="/topology" style="color:#6b9bff;font-size:13px;">View live topology diagram &rarr;</a></div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Connectivity Test (auto-refreshes every 5s)</h2>
+          <div id="targets">loading...</div>
+        </div>
+
+        <div class="card">
+          <h2>Login Test (Secret-backed)</h2>
+          <input id="username" placeholder="username" />
+          <input id="password" placeholder="password" type="password" />
+          <button onclick="doLogin()">Login</button>
+          <div id="loginResult"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h2>Persisted Logs (hostPath PV/PVC)</h2>
+        <pre id="logs">loading...</pre>
+      </div>
+
+    <script>
+    async function refreshConnectivity() {
+      const res = await fetch('/api/connectivity');
+      const data = await res.json();
+      const el = document.getElementById('targets');
+      el.innerHTML = data.map(t => `
+        <div class="target">
+          <div>
+            <div>${t.label}</div>
+            <div class="detail">${t.host}:${t.port}</div>
+            <div class="detail">${t.detail}</div>
+          </div>
+          <span class="badge ${t.ok ? 'allowed' : 'blocked'}">${t.status}</span>
+        </div>
+      `).join('');
+      refreshLogs();
+    }
+
+    async function refreshLogs() {
+      const res = await fetch('/api/logs');
+      const data = await res.json();
+      document.getElementById('logs').textContent = data.lines.join('') || '(no log entries yet)';
+    }
+
+    async function doLogin() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, password})
+      });
+      const data = await res.json();
+      const el = document.getElementById('loginResult');
+      el.style.color = data.ok ? '#4ade80' : '#f87171';
+      el.textContent = data.message;
+      refreshLogs();
+    }
+
+    async function loadWhoami() {
+      const res = await fetch('/api/whoami');
+      const data = await res.json();
+      document.getElementById('whoami').textContent =
+        `pod: ${data.pod_name}  |  namespace: ${data.namespace}  |  ip: ${data.pod_ip}`;
+    }
+
+    loadWhoami();
+    refreshConnectivity();
+    setInterval(refreshConnectivity, 5000);
+    </script>
+    </body>
+    </html>
+    """
+
+    TOPOLOGY_PAGE = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <title>Pod Topology</title>
+    <style>
+      body { font-family: -apple-system, sans-serif; background: #0f1117; color: #e6e6e6; margin: 0; padding: 24px; }
+      h1 { font-size: 20px; }
+      a { color: #6b9bff; }
+      #diagram { margin-top: 16px; background: #0a0b0f; border-radius: 10px; padding: 12px; }
+      #diagram img { width: 100%; display: block; }
+    </style>
+    </head>
+    <body>
+      <h1>Live pod topology (auto-refreshes every 5s)</h1>
+      <a href="/">&larr; back to app</a>
+      <div id="diagram"><img id="svg" src="/api/topology.svg"/></div>
+    <script>
+    function refresh() {
+      document.getElementById('svg').src = '/api/topology.svg?t=' + Date.now();
+    }
+    setInterval(refresh, 5000);
+    </script>
+    </body>
+    </html>
+    """
+
+    if __name__ == "__main__":
+        app.run(host="0.0.0.0", port=8080)
+

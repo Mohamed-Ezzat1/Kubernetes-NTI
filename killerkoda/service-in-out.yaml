@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: target-same-ns
+  namespace: lab-app
+spec:
+  selector:
+    app: in-name-space
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: target-cross-ns
+  namespace: lab-other
+spec:
+  selector:
+    app: out-name-space
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

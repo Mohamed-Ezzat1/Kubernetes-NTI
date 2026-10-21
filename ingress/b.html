@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>PLC Monitoring — Intelligent Production Line Analytics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="/static/logo.png">
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: '#0f172a',
+            muted: '#6b7280',
+            border: '#e5e7eb',
+            accent: '#2563eb',
+          },
+          boxShadow: {
+            soft: '0 24px 60px -28px rgba(15,23,42,.25)',
+          },
+          borderRadius: {
+            xl2: '18px',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .gradient-text {
+      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-gradient {
+      background: radial-gradient(1200px 800px at 50% -10%, #eef3ff 0%, #f7f8fb 40%, #f7f8fb 100%);
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+    .float-animation {
+      animation: float 6s ease-in-out infinite;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-white text-ink">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur border-b border-border">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-10 h-10 rounded-xl bg-accent text-white grid place-items-center font-bold">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+          </div>
+          <span class="text-xl font-bold">PLC Monitoring</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="/login" class="rounded-xl border border-border bg-white px-5 py-2.5 font-medium hover:bg-gray-50 active:translate-y-px transition-all">
+            Login
+          </a>
+          <a href="/register" onclick="console.log('Get Started clicked, href=/register');" class="rounded-xl bg-accent text-white px-5 py-2.5 font-medium hover:opacity-95 active:translate-y-px transition-all">
+            Get Started
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero-gradient pt-32 pb-20 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <!-- Left Column: Content -->
+        <div>
+          <div class="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-2 text-sm font-medium text-accent mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            Intelligent Production Line Analytics
+          </div>
+          <h1 class="text-5xl font-bold tracking-tight mb-6">
+            Transform Sensor Data Into 
+            <span class="gradient-text">Actionable Decisions</span>
+          </h1>
+          <p class="text-xl text-muted leading-relaxed mb-8">
+            A lightweight, adaptable monitoring solution that performs real-time analytics on PLC signals to detect early anomalies and prevent unplanned downtime.
+          </p>
+          <div class="flex flex-wrap items-center gap-4">
+            <a href="/register" class="inline-flex items-center gap-2 rounded-xl bg-accent text-white px-6 py-3.5 font-semibold hover:opacity-95 active:translate-y-px transition-all shadow-lg shadow-accent/25">
+              Start Monitoring
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </a>
+            <a href="#features" class="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-6 py-3.5 font-semibold hover:bg-gray-50 active:translate-y-px transition-all">
+              Learn More
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M19 12l-7 7-7-7"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Right Column: Illustration -->
+        <div class="relative float-animation">
+          <div class="rounded-2xl border border-border bg-white/80 backdrop-blur shadow-soft p-8">
+            <div class="space-y-4">
+              <!-- Fake Dashboard Elements -->
+              <div class="flex items-center justify-between pb-4 border-b border-border">
+                <div>
+                  <div class="text-xs text-muted mb-1">System Status</div>
+                  <div class="text-2xl font-bold">Operational</div>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-green-100 text-green-600 grid place-items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="rounded-xl bg-blue-50 p-3">
+                  <div class="text-xs text-blue-600 mb-1">Devices</div>
+                  <div class="text-2xl font-bold text-blue-700">24</div>
+                </div>
+                <div class="rounded-xl bg-green-50 p-3">
+                  <div class="text-xs text-green-600 mb-1">Active</div>
+                  <div class="text-2xl font-bold text-green-700">22</div>
+                </div>
+                <div class="rounded-xl bg-red-50 p-3">
+                  <div class="text-xs text-red-600 mb-1">Alerts</div>
+                  <div class="text-2xl font-bold text-red-700">2</div>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <div class="h-2 rounded-full bg-gradient-to-r from-blue-500 to-blue-300 w-full"></div>
+                <div class="h-2 rounded-full bg-gradient-to-r from-green-500 to-green-300 w-4/5"></div>
+                <div class="h-2 rounded-full bg-gradient-to-r from-purple-500 to-purple-300 w-3/5"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem & Solution Section -->
+  <section class="py-20 px-6 bg-white">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl font-bold mb-4">The Challenge We Solve</h2>
+        <p class="text-xl text-muted max-w-3xl mx-auto">
+          Traditional SCADA/HMI systems optimize for visualization and static thresholds, missing subtle early warning signs that lead to costly failures.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <!-- Problem -->
+        <div class="rounded-2xl border border-red-200 bg-red-50/50 p-8">
+          <div class="w-12 h-12 rounded-xl bg-red-100 text-red-600 grid place-items-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold mb-3">The Problem</h3>
+          <ul class="space-y-2 text-muted">
+            <li class="flex items-start gap-2">
+              <span class="text-red-600 mt-1">•</span>
+              <span>Issues begin as weak signals that never cross hard thresholds</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-red-600 mt-1">•</span>
+              <span>Operators face late alerts, noisy alarms, and limited context</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-red-600 mt-1">•</span>
+              <span>Delayed response leads to unplanned stoppages and waste</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-red-600 mt-1">•</span>
+              <span>No time-context modeling or behavioral pattern detection</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Solution -->
+        <div class="rounded-2xl border border-green-200 bg-green-50/50 p-8">
+          <div class="w-12 h-12 rounded-xl bg-green-100 text-green-600 grid place-items-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold mb-3">Our Solution</h3>
+          <ul class="space-y-2 text-muted">
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 mt-1">•</span>
+              <span>Real-time analytics detect small deviations and patterns early</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 mt-1">•</span>
+              <span>Context-rich alerts via WhatsApp/Telegram with dashboard links</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 mt-1">•</span>
+              <span>Lightweight layer on top of existing PLC infrastructure</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 mt-1">•</span>
+              <span>Historical trend analysis for root-cause investigation</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="py-20 px-6 bg-gradient-to-b from-white to-gray-50">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl font-bold mb-4">Key Features</h2>
+        <p class="text-xl text-muted max-w-3xl mx-auto">
+          An operational intelligence layer that transforms how you monitor and maintain your production lines.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <!-- Feature 1 -->
+        <div class="rounded-2xl border border-border bg-white p-6 hover:shadow-soft transition-shadow">
+          <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 grid place-items-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Live Data Ingestion</h3>
+          <p class="text-muted text-sm">
+            Secure API connection to PLCs or edge collectors for real-time sensor data streaming.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="rounded-2xl border border-border bg-white p-6 hover:shadow-soft transition-shadow">
+          <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-600 grid place-items-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold mb-2">ML Pattern Detection</h3>
+          <p class="text-muted text-sm">
+            Advanced algorithms identify anomalies and predict potential failures before they occur.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="rounded-2xl border border-border bg-white p-6 hover:shadow-soft transition-shadow">
+          <div class="w-12 h-12 rounded-xl bg-green-100 text-green-600 grid place-items-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Smart Notifications</h3>
+          <p class="text-muted text-sm">
+            Context-rich alerts delivered via WhatsApp, Telegram, or SMS with direct dashboard access.
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="rounded-2xl border border-border bg-white p-6 hover:shadow-soft transition-shadow">
+          <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 grid place-items-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 3v18h18"/>
+              <path d="M18 17V9M13 17V5M8 17v-3"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Historical Analytics</h3>
+          <p class="text-muted text-sm">
+            Comprehensive trend analysis and root-cause investigation with persistent data storage.
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="rounded-2xl border border-border bg-white p-6 hover:shadow-soft transition-shadow">
+          <div class="w-12 h-12 rounded-xl bg-red-100 text-red-600 grid place-items-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Early Warning System</h3>
+          <p class="text-muted text-sm">
+            Detect weak signals and repeating patterns that precede faults—before they become critical.
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="rounded-2xl border border-border bg-white p-6 hover:shadow-soft transition-shadow">
+          <div class="w-12 h-12 rounded-xl bg-cyan-100 text-cyan-600 grid place-items-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Lightweight & Adaptable</h3>
+          <p class="text-muted text-sm">
+            Works on top of existing infrastructure with minimal setup—perfect for SMEs.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="py-20 px-6 bg-white">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl font-bold mb-4">How It Works</h2>
+        <p class="text-xl text-muted max-w-3xl mx-auto">
+          A simple four-step process that sits on top of your existing PLC infrastructure
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-2xl bg-accent text-white grid place-items-center text-2xl font-bold mx-auto mb-4">
+            1
+          </div>
+          <h3 class="font-bold mb-2">Connect</h3>
+          <p class="text-sm text-muted">
+            Integrate with your PLCs via secure API or edge collector
+          </p>
+        </div>
+
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-2xl bg-accent text-white grid place-items-center text-2xl font-bold mx-auto mb-4">
+            2
+          </div>
+          <h3 class="font-bold mb-2">Analyze</h3>
+          <p class="text-sm text-muted">
+            Real-time pattern detection and anomaly identification
+          </p>
+        </div>
+
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-2xl bg-accent text-white grid place-items-center text-2xl font-bold mx-auto mb-4">
+            3
+          </div>
+          <h3 class="font-bold mb-2">Alert</h3>
+          <p class="text-sm text-muted">
+            Instant notifications with context and dashboard links
+          </p>
+        </div>
+
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-2xl bg-accent text-white grid place-items-center text-2xl font-bold mx-auto mb-4">
+            4
+          </div>
+          <h3 class="font-bold mb-2">Prevent</h3>
+          <p class="text-sm text-muted">
+            Take action before failures occur, reducing downtime
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits Section -->
+  <section class="py-20 px-6 bg-gradient-to-b from-gray-50 to-white">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl font-bold mb-4">Measurable Results</h2>
+        <p class="text-xl text-muted max-w-3xl mx-auto">
+          Real outcomes that impact your bottom line
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <div class="text-center p-8 rounded-2xl border border-border bg-white">
+          <div class="text-5xl font-bold text-accent mb-2">↓ 40%</div>
+          <div class="text-lg font-semibold mb-2">Unplanned Downtime</div>
+          <p class="text-sm text-muted">Catch issues before they become failures</p>
+        </div>
+
+        <div class="text-center p-8 rounded-2xl border border-border bg-white">
+          <div class="text-5xl font-bold text-green-600 mb-2">↑ 30%</div>
+          <div class="text-lg font-semibold mb-2">Line Reliability</div>
+          <p class="text-sm text-muted">Consistent production with fewer interruptions</p>
+        </div>
+
+        <div class="text-center p-8 rounded-2xl border border-border bg-white">
+          <div class="text-5xl font-bold text-purple-600 mb-2">↓ 50%</div>
+          <div class="text-lg font-semibold mb-2">Response Time</div>
+          <p class="text-sm text-muted">Faster decisions with actionable insights</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="py-20 px-6 bg-accent text-white">
+    <div class="max-w-4xl mx-auto text-center">
+      <h2 class="text-4xl font-bold mb-6">Ready to Transform Your Production Line?</h2>
+      <p class="text-xl mb-8 opacity-90">
+        Join factories that are reducing downtime and improving reliability with intelligent monitoring.
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-4">
+        <a href="/register" class="inline-flex items-center gap-2 rounded-xl bg-white text-accent px-8 py-4 font-semibold hover:bg-gray-50 active:translate-y-px transition-all shadow-xl">
+          Start Free Trial
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+        <a href="/login" class="inline-flex items-center gap-2 rounded-xl border-2 border-white text-white px-8 py-4 font-semibold hover:bg-white/10 active:translate-y-px transition-all">
+          Login to Dashboard
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 px-6 bg-ink text-white">
+    <div class="max-w-7xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+        
+        <div>
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-8 h-8 rounded-lg bg-accent text-white grid place-items-center font-bold text-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              </svg>
+            </div>
+            <span class="font-bold">PLC Monitoring</span>
+          </div>
+          <p class="text-sm text-gray-400">
+            Intelligent production line analytics for the modern factory.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-semibold mb-3">Product</h3>
+          <ul class="space-y-2 text-sm text-gray-400">
+            <li><a href="#features" class="hover:text-white transition-colors">Features</a></li>
+            <li><a href="/register" class="hover:text-white transition-colors">Get Started</a></li>
+            <li><a href="/login" class="hover:text-white transition-colors">Login</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="font-semibold mb-3">Company</h3>
+          <ul class="space-y-2 text-sm text-gray-400">
+            <li><a href="#" class="hover:text-white transition-colors">About</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">Contact</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">Support</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="font-semibold mb-3">Legal</h3>
+          <ul class="space-y-2 text-sm text-gray-400">
+            <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">Terms of Service</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="pt-8 border-t border-gray-800 text-center text-sm text-gray-400">
+        © 2024 PLC Monitoring. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

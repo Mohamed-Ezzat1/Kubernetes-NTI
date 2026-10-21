@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-deployment-blue
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blue
+  template:
+    metadata:
+      labels:
+        app: blue
+    spec:
+      containers:
+      - name: ingress-container
+        image: hashicorp/http-echo
+        ports:
+        - containerPort: 5678
+        args:
+        - -text=I am BLUE
+        - -listen=:5678
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-deployment-green
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: green
+  template:
+    metadata:
+      labels:
+        app: green
+    spec:
+      containers:
+      - name: ingress-container
+        image: hashicorp/http-echo
+        ports:
+        - containerPort: 5678
+        args:
+        - -text=I am GREEN
+        - -listen=:5678
